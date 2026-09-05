@@ -1,0 +1,14 @@
+{
+  "id": "wfkbra3bnnrmt0d0e68rw169hm",
+  "model": "bytedance/seedance-2.5",
+  "prompt": "Luxury fashion house campaign film, vertical, editorial, cinematic, photoreal, macro detail, shallow depth of field. A single artisanal string net bag hangs alone on a thin wire in a quiet gallery of warm travertine and matte ochre plaster, generous empty air around it, like a museum exhibit. The bag is hand-knotted from twisted deep ultramarine cord in a large diamond mesh, the spiral of the twist and neat handmade knots reading in macro, its long looped handles gathering into one braided knot above. Seven flawless oranges rest inside; the mesh stretches over their curves, cells pulled taut, cord pressing softly into the peel. The bag sways in a tiny slow pendulum motion and turns a slow half-rotation on its handles. Nothing else moves.\n\nMuseum lighting: one narrow hard warm beam rakes in from behind left, passing straight through the mesh. The oranges glow amber from within, translucent at the edges; every strand of ultramarine cord catches a luminous rim. The woven diamond pattern lays a crisp lattice of shadow across the plaster and drifts slowly as the bag sways. Dust motes float in the beam. The front of the bag stays in deep warm shadow, the room darker than the object. Saturated ultramarine against warm orange, golden hour grade, fine film grain, hypnotic, restrained and expensive.\n\nCamera: locked-off tripod, static vertical framing, medium shot with wide breathing room around the bag, plus an extremely slow almost imperceptible push-in. Focus holds cord and peel texture; the wall falls softly out of focus.\n\nSound: an almost silent hall. Only the faint creak of twisted cord on its hanger and a soft breath of air. No music, no voices, no dialogue, no street noise.\n\nNo people, no hands, no silhouettes, no reflections. No white studio background, no household clutter. No text, no lettering, no logos, no price tags, no watermarks. No subtitles. No subtitles! No fast camera moves, no cuts, no violent swinging. The oranges do not fall, the net does not tear.",
+  "params": {
+    "duration": 5,
+    "resolution": "720p",
+    "aspect_ratio": "9:16",
+    "generate_audio": true,
+    "watermark": false
+  },
+  "seconds": 141,
+  "output_url": "https://replicate.delivery/xezq/Huz4XaArLIYmGtPyKKBh8fUrA31DL6ch8WgkNDEbzabWebKXA/tmpmd0flh8d.mp4"
+}

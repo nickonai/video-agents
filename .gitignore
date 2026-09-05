@@ -5,6 +5,9 @@
 output/
 briefs/
 
+# исходники товара заказчика
+_DSC*.jpg
+
 # служебное
 __pycache__/
 *.pyc

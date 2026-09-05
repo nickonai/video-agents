@@ -1,0 +1,14 @@
+{
+  "id": "sancnpg16hrmy0d0e6btxp7e7g",
+  "model": "bytedance/seedance-2.5",
+  "prompt": "Luxury product film, editorial still life, vertical, hands only, no faces. A polished dark walnut table beside warm travertine, a heavy high-grade linen cloth in soft folds, one handmade ceramic bowl out of focus. A premium blue string bag lies flat and empty: twisted ultramarine cord, visibly hand-braided, neat knots, long looped handles, diamond mesh slack and collapsed. Two elegant well-groomed adult hands, a thin gold ring, a cashmere cuff, enter from the top of frame and place large flawless oranges into the bag one after another, four of them, slow and assured. With each orange the flat mesh opens and swells: diamond cells stretch taut, the cobalt cord bites into the dimpled peel, the bag rises from a limp textile into a full round volume, handles drawing up into a rope. Final beat: a hand lifts the handles a few centimetres, the loaded net settles and sways, the twine creaks, the weave holds. Style: cinematic premium craftsmanship, fashion-house campaign, macro lens, shallow depth of field, rich material texture, fine film grain, no plastic CGI look. Camera: locked macro at table level, then a slow smooth push-in with a slight tilt up following the growing volume, ending on the taut blue diamonds pressed against orange peel. Light: soft directional daylight from the left, gentle falloff, deep quiet shadows on the walnut, saturated ultramarine against warm orange, unhurried, tactile, expensive mood. Composition: vertical 9:16, bag centered in the lower two thirds, calm empty space above for a text overlay. Sound: dry rustle of braided cord, soft heavy thuds of oranges settling into the net, faint creak of stretching twine, quiet room tone, no music, no voice, no dialogue. No subtitles. No subtitles! No text, no captions, no letters, no logos, no brand marks, no watermarks. No faces, no people visible, no full bodies, only hands. No white studio background, no seamless backdrop. No fast cuts, no scene change, one continuous shot.",
+  "params": {
+    "duration": 5,
+    "resolution": "720p",
+    "aspect_ratio": "9:16",
+    "generate_audio": true,
+    "watermark": false
+  },
+  "seconds": 156,
+  "output_url": "https://replicate.delivery/xezq/IB62exVMTDUgfUDKjJTSyJhQ1JZfvn2YWoFe5v8PIsSqKwpcB/tmp1exa09xj.mp4"
+}

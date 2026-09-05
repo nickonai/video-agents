@@ -1,0 +1,12 @@
+{
+  "clips": [
+    "avoska-light.mp4",
+    "avoska-capacity.mp4",
+    "avoska-life.mp4"
+  ],
+  "transition": 0.4,
+  "audio": true,
+  "duration": 14.375,
+  "size": "720×1280",
+  "seconds": 6.8
+}

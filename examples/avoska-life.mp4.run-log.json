@@ -1,0 +1,14 @@
+{
+  "id": "tq23s3qspxrmy0d0e6b976cc5w",
+  "model": "bytedance/seedance-2.5",
+  "prompt": "Luxury fashion campaign film, vertical 9:16, photorealistic cinematic editorial. Slow tracking shot gliding alongside an elegant woman walking unhurried past a sunlit wall of warm honey-toned stone and aged cream plaster, a weathered brass door handle catching light behind her. Tight medium close-up cropped at chest level: only a shoulder in an ivory cashmere coat, a slim silk sleeve, a groomed hand and a hip are in frame. No face, no head, the face is never visible.\n\nHero object: a bright cobalt-blue net bag hand-knotted from twisted braided cord, large open diamond mesh, long braided loop handles gathered into a twisted rope. The handles rest over her shoulder, the bag hangs at hip height holding seven flawless deep-orange oranges that stretch the mesh into taut diamonds. It sways slowly with her calm, confident stride. A thin gold bracelet and a slender gold watch glint on her wrist as her fingers rest against the cord.\n\nMid-shot the camera drifts into a macro detail of the mesh: individual fibres of the twisted cord, the precision of each hand-tied knot, artisanal craftsmanship, saturated ultramarine against glowing orange peel.\n\nLight: golden hour, low warm backlight. Sun rakes through the open mesh, passing through the diamond gaps and glowing inside the oranges; soft moving lattice shadows slide across cashmere and skin. Deep saturated blue against warm neutral stone. Shallow depth of field, background softly blurred, premium color grade, 50mm lens, subtle film grain.\n\nMood: quiet luxury, slowness, understated confidence. Never rushed.\n\nSound: hushed ambience of a quiet old street, unhurried footsteps on stone, faint rustle of cord and fruit settling. No music, no dialogue, no voices.\n\nNo subtitles. No subtitles! No text, no captions, no letters, no logos, no brand marks, no watermark. No visible face, no eyes, no white studio background, no market stalls or crates, no plastic bags, no other bags.",
+  "params": {
+    "duration": 5,
+    "resolution": "720p",
+    "aspect_ratio": "9:16",
+    "generate_audio": true,
+    "watermark": false
+  },
+  "seconds": 241,
+  "output_url": "https://replicate.delivery/xezq/PxFgp5fh4BWVCKzzI7Uoyf5KFw3Qyyq9Eu1XNaNyFBCAEcKXA/tmpikrik32h.mp4"
+}
