@@ -15,6 +15,13 @@
 
 ⚠️ Планы должны быть одного формата: смешивать 9:16 и 16:9 в одной сборке
    нельзя, монтажёр остановится и скажет об этом.
+
+Сборка локальная, платных вызовов нет. `--dry-run` читает планы, проверяет
+формат и переход и печатает итог, не запуская ffmpeg.
+
+Код выхода: 0 — ролик собран; иной — сборка не состоялась. При ошибке ffmpeg в
+консоль идут последние строки, полный журнал лежит в output/<name>.ffmpeg.log.
+Ролик пишется во временный файл и появляется под своим именем только целым.
 """
 from __future__ import annotations
 
@@ -29,18 +36,29 @@ ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "output"
 FPS = 24                      # Seedance отдаёт 24 кадра, держим то же
 AUDIO_RATE = 48000            # приводим дорожки к одному, иначе acrossfade врёт
+PROBE_TIMEOUT = 60            # секунды на чтение одного плана
+ENCODE_TIMEOUT = 1800         # секунды на склейку; зависший ffmpeg не держит сессию
+ERROR_LINES = 12              # строк stderr в консоль; остальное — в журнал
 
 
-def run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, check=False)
+def run(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
+    """Запуск без stdin (ffmpeg иначе ждёт клавиш) и с потолком по времени."""
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, check=False,
+                              stdin=subprocess.DEVNULL, timeout=timeout)
+    except FileNotFoundError:
+        sys.exit(f"❌ Не найден {cmd[0]}: установите ffmpeg (macOS: brew install ffmpeg)")
+    except subprocess.TimeoutExpired:
+        sys.exit(f"❌ {cmd[0]} не уложился в {timeout} с и остановлен")
 
 
 def probe(path: Path) -> dict:
     """Длительность, размер кадра и наличие звука — по ним собираем фильтр."""
     res = run(["ffprobe", "-v", "error", "-print_format", "json",
-               "-show_format", "-show_streams", str(path)])
+               "-show_format", "-show_streams", str(path)], PROBE_TIMEOUT)
     if res.returncode != 0:
-        sys.exit(f"❌ Не читается {path.name}: {res.stderr.strip()}")
+        tail = "\n".join(res.stderr.strip().splitlines()[-ERROR_LINES:])
+        sys.exit(f"❌ Не читается {path.name}: {tail}")
     data = json.loads(res.stdout)
     video = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     if video is None:
@@ -114,6 +132,8 @@ def main() -> None:
                     help="секунды перетекания между планами; 0 — жёсткий стык")
     ap.add_argument("--audio", default="keep", choices=["keep", "mute"],
                     help="keep — родной звук планов, mute — тишина под озвучку")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="проверить планы и параметры, не запуская ffmpeg")
     args = ap.parse_args()
 
     paths = [resolve(name) for name in args.clips]
@@ -155,8 +175,13 @@ def main() -> None:
         total = sum(c["duration"] for c in clips)
         print(f"   Склейка: жёсткий стык, итог ≈ {total:.2f} с")
 
+    if args.dry_run:
+        print("🧪 Пробный прогон: ffmpeg не запускался, файл не создан")
+        return
+
     target = OUTPUT / f"{args.name}.mp4"
-    cmd = ["ffmpeg", "-y"]
+    partial = OUTPUT / f"{args.name}.partial.mp4"
+    cmd = ["ffmpeg", "-y", "-nostdin", "-hide_banner", "-loglevel", "error"]
     for clip in clips:
         cmd += ["-i", str(clip["path"])]
     cmd += ["-filter_complex", graph, "-map", f"[{vout}]"]
@@ -165,14 +190,19 @@ def main() -> None:
     else:
         cmd += ["-an"]
     cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", "18",
-            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(target)]
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(partial)]
 
     print("🎬 Собираю…", flush=True)
     started = time.time()
-    res = run(cmd)
+    res = run(cmd, ENCODE_TIMEOUT)
     if res.returncode != 0:
-        tail = "\n".join(res.stderr.strip().splitlines()[-12:])
-        sys.exit(f"❌ ffmpeg не справился:\n{tail}")
+        partial.unlink(missing_ok=True)
+        full = OUTPUT / f"{args.name}.ffmpeg.log"
+        full.write_text(res.stderr, encoding="utf-8")
+        tail = "\n".join(res.stderr.strip().splitlines()[-ERROR_LINES:])
+        sys.exit(f"❌ ffmpeg не справился (код {res.returncode}):\n{tail}\n"
+                 f"   Полный журнал: {full}")
+    partial.replace(target)
 
     seconds = time.time() - started
     final = probe(target)

@@ -16,6 +16,13 @@
 
 Токен: REPLICATE_API_TOKEN или AI_STUDIO__REPLICATE_API_TOKEN в окружении,
 иначе .env рядом или ~/unika/backend/.env.univerus.local.
+
+Съёмка платная. `--dry-run` проверяет параметры и печатает запрос без токена и
+без сети: ничего не запускает и ничего не стоит.
+
+Код выхода: 0 — файл готов; 1 — съёмка не удалась или не те параметры;
+2 — время ожидания (`--max-wait`) вышло, съёмка на Replicate могла остаться
+запущенной: id напечатан, результат проверяют по нему.
 """
 from __future__ import annotations
 
@@ -32,6 +39,9 @@ API = "https://api.replicate.com/v1"
 MODEL = "bytedance/seedance-2.5"
 PROMPT_LIMIT = 2000          # у 2.5 жёсткий предел; 2.0 держал 4000
 POLL_SEC = 8
+PROGRESS_SEC = 60            # строка прогресса не чаще: лог не растёт на каждый опрос
+MAX_WAIT_SEC = 1800          # потолок ожидания по умолчанию; замер: 5 с видео — до 5,5 мин
+ERROR_CHARS = 500            # ошибка провайдера в логе — ограниченный фрагмент
 ROOT = Path(__file__).resolve().parent.parent
 ENV_FILES = [ROOT / ".env", Path.home() / "unika/backend/.env.univerus.local"]
 ENV_KEYS = ("REPLICATE_API_TOKEN", "AI_STUDIO__REPLICATE_API_TOKEN")
@@ -51,16 +61,16 @@ def token() -> str:
     sys.exit("❌ Нет токена Replicate: задайте REPLICATE_API_TOKEN или проверьте .env")
 
 
-TOKEN = token()
-HEADERS = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
+TOKEN = ""                                     # задаётся в main(): --help и --dry-run без ключа
 
 
 def api(method: str, url: str, body: dict | None = None) -> dict:
+    headers = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
     data = json.dumps(body).encode() if body is not None else None
     last: Exception | None = None
     for attempt in range(4):                       # сеть иногда рвётся, повторяем
         try:
-            req = urllib.request.Request(url, data=data, method=method, headers=HEADERS)
+            req = urllib.request.Request(url, data=data, method=method, headers=headers)
             with urllib.request.urlopen(req, timeout=120) as resp:
                 return json.loads(resp.read())
         except Exception as exc:                   # noqa: BLE001 — печатаем и пробуем снова
@@ -74,7 +84,7 @@ def upload(path: str) -> str:
     """Локальный файл → ссылка Replicate Files. Нужен для опорных кадров."""
     for attempt in range(4):
         run = subprocess.run(
-            ["curl", "-s", "-X", "POST", f"{API}/files",
+            ["curl", "-s", "--max-time", "120", "-X", "POST", f"{API}/files",
              "-H", f"Authorization: Bearer {TOKEN}", "-F", f"content=@{path}"],
             capture_output=True, text=True, check=False)
         try:
@@ -104,6 +114,10 @@ def main() -> None:
     ap.add_argument("--image", default="", help="опорный первый кадр (без фото лиц)")
     ap.add_argument("--last-frame", default="", help="опорный последний кадр")
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--max-wait", type=int, default=MAX_WAIT_SEC,
+                    help=f"потолок ожидания съёмки, секунды (по умолчанию {MAX_WAIT_SEC})")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="проверить параметры и напечатать запрос; без токена, сети и расхода")
     args = ap.parse_args()
 
     prompt = (Path(args.prompt_file).read_text(encoding="utf-8").strip()
@@ -115,6 +129,8 @@ def main() -> None:
         sys.exit("❌ Длительность вне диапазона 4–30 секунд")
     if args.last_frame and not args.image:
         sys.exit("❌ Последний кадр работает только вместе с первым (--image)")
+    if args.max_wait < 1:
+        sys.exit("❌ --max-wait должен быть положительным числом секунд")
 
     print(f"🎬 Модель: {MODEL}")
     print(f"   Формат {args.aspect} · {args.resolution} · {args.duration} с · "
@@ -126,6 +142,19 @@ def main() -> None:
                "watermark": False}
     if args.seed is not None:
         payload["seed"] = args.seed
+
+    if args.dry_run:
+        for key, value in (("image", args.image), ("last_frame_image", args.last_frame)):
+            if value:
+                payload[key] = value if not Path(value).exists() else f"<файл {Path(value).name}>"
+        shown = {k: v for k, v in payload.items() if k != "prompt"}
+        print(f"🧪 Пробный прогон: модель не вызывалась, токен не нужен. Промпт {len(prompt)} симв.")
+        print(f"   Запрос: {json.dumps(shown, ensure_ascii=False)}")
+        print(f"   Файл будет: {ROOT / 'output' / (args.name + '.mp4')}")
+        return
+
+    global TOKEN
+    TOKEN = token()
     if args.image:
         payload["image"] = resolve(args.image)
     if args.last_frame:
@@ -136,18 +165,26 @@ def main() -> None:
     print(f"🚀 Запущено: {pid}")
 
     started = time.time()
+    last_status, last_print = None, 0.0
     while status not in ("succeeded", "failed", "canceled"):
+        if time.time() - started > args.max_wait:
+            print(f"⏱ Ждали {args.max_wait} с, съёмка {pid} не завершилась. "
+                  f"Она могла остаться запущенной на Replicate: проверьте {API}/predictions/{pid}")
+            sys.exit(2)
         time.sleep(POLL_SEC)
         try:
             pred = api("GET", f"{API}/predictions/{pid}")
             status = pred["status"]
         except Exception as exc:                   # noqa: BLE001
-            print(f"  … опрос не прошёл: {exc}", flush=True)
+            print(f"  … опрос не прошёл: {str(exc)[:ERROR_CHARS]}", flush=True)
             continue
-        print(f"   [{int(time.time() - started)} с] {status}", flush=True)
+        # Строка — при смене статуса и раз в PROGRESS_SEC, а не на каждый опрос
+        if status != last_status or time.time() - last_print >= PROGRESS_SEC:
+            print(f"   [{int(time.time() - started)} с] {status}", flush=True)
+            last_status, last_print = status, time.time()
 
     if status != "succeeded":
-        err = str(pred.get("error"))
+        err = str(pred.get("error"))[:ERROR_CHARS]
         print(f"❌ Не получилось: {err}")
         if "E005" in err or "sensitive" in err:
             print("   E005 — на входе фотореалистичное лицо. Нарисованное лицо проходит; "
@@ -158,7 +195,11 @@ def main() -> None:
     url = out if isinstance(out, str) else out[0]
     target = ROOT / "output" / f"{args.name}.mp4"
     target.parent.mkdir(parents=True, exist_ok=True)
-    urllib.request.urlretrieve(url, target)
+    partial = target.with_suffix(".mp4.part")      # обрыв загрузки не оставляет битый mp4
+    with urllib.request.urlopen(url, timeout=120) as resp, partial.open("wb") as fh:
+        while chunk := resp.read(1 << 20):
+            fh.write(chunk)
+    partial.replace(target)
     log = {"id": pid, "model": MODEL, "prompt": prompt,
            "params": {k: v for k, v in payload.items() if k != "prompt"},
            "seconds": int(time.time() - started), "output_url": url}
